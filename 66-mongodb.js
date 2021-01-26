@@ -307,4 +307,66 @@ module.exports = function(RED) {
         });
     }
     RED.nodes.registerType("mongodb in",MongoInNode);
+
+    function MongoChangeStreamNode(n) {
+        RED.nodes.createNode(this,n);
+        this.collection = n.collection;
+        this.mongodb = n.mongodb;
+        this.mongoConfig = RED.nodes.getNode(this.mongodb);
+        this.status({fill:"grey",shape:"ring",text:RED._("mongodb.status.connecting")});
+        var node = this;
+        var noerror = true;
+
+        var connectToDB = function() {
+            console.log("connecting:  " + node.mongoConfig.url);
+            MongoClient.connect(node.mongoConfig.url, function(err,client) {
+                if (err) {
+                    node.status({fill:"red",shape:"ring",text:RED._("mongodb.status.error")});
+                    if (noerror) { node.error(err); }
+                    noerror = false;
+                    node.tout = setTimeout(connectToDB, 10000);
+                }
+                else {
+                    node.status({fill:"green",shape:"dot",text:RED._("mongodb.status.connected")});
+                    node.client = client;
+                    var db = client.db();
+                    noerror = true;
+                    var coll;
+                    if (!node.collection) {
+                        node.error(RED._("mongodb.errors.nocollection"));
+                        return;
+                    }
+                    else {
+                        coll = db.collection(node.collection);
+                    }
+                    var pipeline = [];
+                    var options = [];
+                    node.changeStream = coll
+                        .watch(pipeline, options);
+                        .on("error", function(err) {
+                            node.error(err);
+                        });
+                        .on("change", function(next) {
+                            node.send({payload: next});
+                        })
+                }
+            });
+        }
+
+        if (node.mongoConfig) { connectToDB(); }
+        else { node.error(RED._("mongodb.errors.missingconfig")); }
+
+        node.on("close", function() {
+            node.status({});
+            if (node.tout) { clearTimeout(node.tout); }
+            if (node.changeStream) { 
+                node.changeStream
+                    .removeAllListeners("change");
+                    .removeAllListeners("error");
+                    .close(); 
+            }
+            if (node.client) { node.client.close(); }
+        });
+    }
+    RED.nodes.registerType("mongodb change stream",MongoChangeStreamNode);
 }

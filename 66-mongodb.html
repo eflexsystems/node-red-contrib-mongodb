@@ -288,3 +288,75 @@
         oneditprepare: oneditprepare
     });
 </script>
+
+
+<script type="text/html" data-template-name="mongodb change stream">
+    <div class="form-row">
+        <label for="node-input-mongodb"><i class="fa fa-bookmark"></i> <span data-i18n="mongodb.label.server"></span></label>
+        <input type="text" id="node-input-mongodb">
+    </div>
+    <div class="form-row">
+        <label for="node-input-collection"><i class="fa fa-briefcase"></i> <span data-i18n="mongodb.label.collection"></span></label>
+        <input type="text" id="node-input-collection">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
+        <input type="text" id="node-input-name" data-i18n="[placeholder]node-red:common.label.name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-pipeline">Pipeline</label>
+        <input type="text" id="node-input-pipeline">
+    </div>
+    <div class="form-row">
+        <label for="node-input-options">Options</label>
+        <input type="text" id="node-input-options">
+    </div>
+    <div class="form-tips" id="node-warning" style="display: none"><span data-i18n="[html]mongodb.tip"></span></div>
+</script>
+
+<script type="text/html" data-help-name="mongodb change stream">
+    <p>MongoDB Change Stream</p>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('mongodb change stream', {
+        category: 'storage-input',
+        color: "rgb(218, 196, 180)",
+        defaults: {
+            mongodb: {type: "mongodb", required: true},
+            name: {value: ""},
+            collection: {value: ""},
+            pipeline: {
+                value: [],
+                required: true
+                validate: function(val) {
+                    Array.isArray(val);
+                }
+            },
+            options: {
+                value: {},
+                required: false
+            }
+        },
+        inputs: 0,
+        outputs: 1,
+        icon: "mongodb.png",
+        label: function() {
+            var mongoNode = RED.nodes.node(this.mongodb);
+            return this.name || (mongoNode ? mongoNode.label() + " " + this.collection : "mongodb");
+        },
+        labelStyle: function() {
+            return this.name ? "node_label_italic" : "";
+        },
+        oneditprepare: function() {
+          $('#node-input-pipeline').typedInput({
+            default: 'json',
+            types: ["json"]
+          });
+          $('#node-input-options').typedInput({
+            default: 'json',
+            types: ["json"]
+          });
+        }
+    });
+</script>
