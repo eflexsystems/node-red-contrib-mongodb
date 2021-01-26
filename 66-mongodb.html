@@ -325,18 +325,9 @@
         defaults: {
             mongodb: {type: "mongodb", required: true},
             name: {value: ""},
-            collection: {value: ""},
-            pipeline: {
-                value: [],
-                required: true
-                validate: function(val) {
-                    Array.isArray(val);
-                }
-            },
-            options: {
-                value: {},
-                required: false
-            }
+            collection: {value: "", required: true},
+            pipeline: {value: "[]", required: false},
+            options: {value: "{}", required: false}
         },
         inputs: 0,
         outputs: 1,

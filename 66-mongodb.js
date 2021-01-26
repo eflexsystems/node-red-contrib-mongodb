@@ -313,6 +313,8 @@ module.exports = function(RED) {
         this.collection = n.collection;
         this.mongodb = n.mongodb;
         this.mongoConfig = RED.nodes.getNode(this.mongodb);
+        this.pipeline = JSON.parse(n.pipeline);
+        this.options = JSON.parse(n.options);
         this.status({fill:"grey",shape:"ring",text:RED._("mongodb.status.connecting")});
         var node = this;
         var noerror = true;
@@ -339,16 +341,18 @@ module.exports = function(RED) {
                     else {
                         coll = db.collection(node.collection);
                     }
-                    var pipeline = [];
-                    var options = [];
+                    var pipeline = node.pipeline || [];
+                    var options = node.options || {};
+                    console.log(pipeline);
+                    console.log(options);
                     node.changeStream = coll
-                        .watch(pipeline, options);
+                        .watch(pipeline, options)
                         .on("error", function(err) {
                             node.error(err);
-                        });
+                        })
                         .on("change", function(next) {
                             node.send({payload: next});
-                        })
+                        });
                 }
             });
         }
@@ -361,8 +365,8 @@ module.exports = function(RED) {
             if (node.tout) { clearTimeout(node.tout); }
             if (node.changeStream) { 
                 node.changeStream
-                    .removeAllListeners("change");
-                    .removeAllListeners("error");
+                    .removeAllListeners("change")
+                    .removeAllListeners("error")
                     .close(); 
             }
             if (node.client) { node.client.close(); }
