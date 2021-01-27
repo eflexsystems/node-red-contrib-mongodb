@@ -319,6 +319,39 @@ module.exports = function(RED) {
         var node = this;
         var noerror = true;
 
+        var cleanupChangeStream = function() {
+            if (node.changeStream) { 
+                node.changeStream
+                    .removeAllListeners("change")
+                    .removeAllListeners("error")
+                    .close(); 
+            }
+        };
+
+        var createChangeStream = function() {
+            cleanupChangeStream();
+            var db = node.client.db();
+            noerror = true;
+            var coll;
+            if (!node.collection) {
+                node.error(RED._("mongodb.errors.nocollection"));
+                return;
+            }
+            else {
+                coll = db.collection(node.collection);
+            }
+            var pipeline = node.pipeline || [];
+            var options = node.options || {};
+            node.changeStream = coll
+                .watch(pipeline, options)
+                .on("error", function(err) {
+                    node.status({fill:"red",shape:"ring",text:RED._("mongodb.status.error")});
+                })
+                .on("change", function(next) {
+                    node.send({payload: next});
+                });
+        };
+
         var connectToDB = function() {
             console.log("connecting:  " + node.mongoConfig.url);
             MongoClient.connect(node.mongoConfig.url, { reconnectTries: 600 }, function(err,client) {
@@ -337,28 +370,9 @@ module.exports = function(RED) {
                         })
                         .on('reconnect', function() { 
                             node.status({fill:"green",shape:"dot",text:RED._("mongodb.status.connected")});
+                            createChangeStream();
                         });
-                    var db = client.db();
-                    noerror = true;
-                    var coll;
-                    if (!node.collection) {
-                        node.error(RED._("mongodb.errors.nocollection"));
-                        return;
-                    }
-                    else {
-                        coll = db.collection(node.collection);
-                    }
-                    var pipeline = node.pipeline || [];
-                    var options = node.options || {};
-                    node.changeStream = coll
-                        .watch(pipeline, options)
-                        .on("error", function(err) {
-                            node.status({fill:"red",shape:"ring",text:RED._("mongodb.status.error")});
-                            node.error(err);
-                        })
-                        .on("change", function(next) {
-                            node.send({payload: next});
-                        });
+                    createChangeStream();
                 }
             });
         }
@@ -369,17 +383,12 @@ module.exports = function(RED) {
         node.on("close", function() {
             node.status({});
             if (node.tout) { clearTimeout(node.tout); }
-            if (node.changeStream) { 
-                node.changeStream
-                    .removeAllListeners("change")
-                    .removeAllListeners("error")
-                    .close(); 
-            }
+            cleanupChangeStream();
             if (node.client) { 
                 node.client
                     .removeAllListeners("close")
-                    .removeAllListeners("reconnect");
-                node.client.close(); 
+                    .removeAllListeners("reconnect")
+                    .close();
             }
         });
     }
