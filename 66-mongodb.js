@@ -343,8 +343,6 @@ module.exports = function(RED) {
                     }
                     var pipeline = node.pipeline || [];
                     var options = node.options || {};
-                    console.log(pipeline);
-                    console.log(options);
                     node.changeStream = coll
                         .watch(pipeline, options)
                         .on("error", function(err) {
