@@ -321,7 +321,7 @@ module.exports = function(RED) {
 
         var connectToDB = function() {
             console.log("connecting:  " + node.mongoConfig.url);
-            MongoClient.connect(node.mongoConfig.url, function(err,client) {
+            MongoClient.connect(node.mongoConfig.url, { reconnectTries: 600 }, function(err,client) {
                 if (err) {
                     node.status({fill:"red",shape:"ring",text:RED._("mongodb.status.error")});
                     if (noerror) { node.error(err); }
@@ -331,6 +331,13 @@ module.exports = function(RED) {
                 else {
                     node.status({fill:"green",shape:"dot",text:RED._("mongodb.status.connected")});
                     node.client = client;
+                    node.client
+                        .on('close', function() { 
+                            node.status({fill:"red",shape:"ring",text:RED._("mongodb.status.error")});
+                        })
+                        .on('reconnect', function() { 
+                            node.status({fill:"green",shape:"dot",text:RED._("mongodb.status.connected")});
+                        });
                     var db = client.db();
                     noerror = true;
                     var coll;
@@ -346,6 +353,7 @@ module.exports = function(RED) {
                     node.changeStream = coll
                         .watch(pipeline, options)
                         .on("error", function(err) {
+                            node.status({fill:"red",shape:"ring",text:RED._("mongodb.status.error")});
                             node.error(err);
                         })
                         .on("change", function(next) {
@@ -367,7 +375,12 @@ module.exports = function(RED) {
                     .removeAllListeners("error")
                     .close(); 
             }
-            if (node.client) { node.client.close(); }
+            if (node.client) { 
+                node.client
+                    .removeAllListeners("close")
+                    .removeAllListeners("reconnect");
+                node.client.close(); 
+            }
         });
     }
     RED.nodes.registerType("mongodb change stream",MongoChangeStreamNode);
