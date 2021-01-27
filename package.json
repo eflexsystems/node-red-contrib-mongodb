@@ -7,7 +7,7 @@
     },
     "repository" : {
         "type":"git",
-        "url":"https://github.com/node-red/node-red-nodes/tree/master/storage/mongodb"
+        "url":"https://github.com/eflexsystems/node-red-contrib-mongodb"
     },
     "license": "Apache-2.0",
     "keywords": [ "node-red", "mongodb" ],
@@ -17,14 +17,18 @@
         }
     },
     "author": {
-        "name": "Dave Conway-Jones",
-        "email": "ceejay@vnet.ibm.com",
-        "url": "http://nodered.org"
+        "name": "Jacob Jewell",
+        "email": "jacobjewell@eflexsystems.com"
     },
     "contributors": [
     {
       "name": "Ross Cruickshank",
       "email": "ross@vnet.ibm.com"
+    },
+    {
+      "name": "Dave Conway-Jones",
+      "email": "ceejay@vnet.ibm.com",
+      "url": "http://nodered.org"
     }
   ]
 }
